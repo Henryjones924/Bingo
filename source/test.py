@@ -4,14 +4,14 @@ import cv2
 from tabulate import tabulate
 import os
 
-def scan_card(path,iterations):
+def scan_card(path,iterations,x):
     image = cv2.imread(path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (3,3), 0)
     thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
 
     # Morph open to remove noise and invert image
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (x,x))
     opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=iterations)
     invert = 255 - opening
 
@@ -37,27 +37,37 @@ def line_validation(scan):
     lines = scan.splitlines()
     #Remove Empty Spaces In Line
     cleaned_lines = [line.replace(" ", "") for line in lines]
+    cleaned_lines = [cleaned_lines for cleaned_lines in cleaned_lines if cleaned_lines]
 
     #Count Number of digits in each line
-    print(cleaned_lines)
+    #print(cleaned_lines)
     valid = 0
     for line in cleaned_lines:
         number_of_digits = len(line)
-    
-        print (number_of_digits)
+        #print (number_of_digits)
         
         #Validate number of digits in each line
         if valid != 2 and number_of_digits in [9,10]:
             valid +=1
             bingo_lines.append(line)
+            
         elif valid == 2 and number_of_digits in [7,8]:
             valid +=1
             bingo_lines.append(line)
         else:
             print ("Error on line ranges")
-    #Check total nuber of lines
+    #Check total nuber of lines and number validation
     for line in bingo_lines:
+        # first2 = int(line[:2])
+        # print (first2)
+        # if first2 <=15:
+        #     pass
+        # else:
+        #     print ("First two digits are not valid")
+        #     return False
+        
         count+=1    
+    
     if count != 5:
         print ("Error all bingo lines were not detected")
         return False
@@ -67,8 +77,9 @@ def line_validation(scan):
     else:
         print ("Error on Free Space Line with Length Check")
         return False
+    
     return (bingo_lines)
-  
+        
 
 
 
@@ -148,9 +159,31 @@ def game_fourcorners(bingo_board):
 def import_card():
     #ScanCard
     path = input("Enter Game Card Path: ")
-        
-    for interation in range(1,5):
-        scan = scan_card(path,interation)
+  
+            
+    for interation in range(1,6):
+        scan = scan_card(path,interation,3)
+        validation = line_validation (scan)
+        if validation is False:
+            print("Attempting Interaction Increase")
+            pass
+        else:
+            break
+        scan = scan_card(path,interation,2)
+        validation = line_validation (scan)
+        if validation is False:
+            print("Attempting Interaction Increase")
+            pass
+        else:
+            break
+        scan = scan_card(path,interation,4)
+        validation = line_validation (scan)
+        if validation is False:
+            print("Attempting Interaction Increase")
+            pass
+        else:
+            break
+        scan = scan_card(path,interation,5)
         validation = line_validation (scan)
         if validation is False:
             print("Attempting Interaction Increase")
@@ -158,6 +191,7 @@ def import_card():
         else:
             break
             
+    
     #CreateCard
     bingo_board = create_bingo_board(validation)
     return (bingo_board)
