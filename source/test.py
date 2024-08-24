@@ -44,40 +44,36 @@ def line_validation(scan):
     valid = 0
     for line in cleaned_lines:
         number_of_digits = len(line)
-        #print (number_of_digits)
         
         #Validate number of digits in each line
-        if valid != 2 and number_of_digits in [9,10]:
-            valid +=1
-            bingo_lines.append(line)
-            
-        elif valid == 2 and number_of_digits in [7,8]:
+        if (valid != 2 and number_of_digits in [9,10]) or (valid == 2 and number_of_digits in [7,8]) :
             valid +=1
             bingo_lines.append(line)
         else:
             print ("Error on line ranges")
     #Check total nuber of lines and number validation
-    for line in bingo_lines:
-        # first2 = int(line[:2])
-        # print (first2)
-        # if first2 <=15:
-        #     pass
-        # else:
-        #     print ("First two digits are not valid")
-        #     return False
-        
-        count+=1    
-    
-    if count != 5:
-        print ("Error all bingo lines were not detected")
+    if len(bingo_lines) != 5:
+        print("Error all bingo lines were not detected")
         return False
     #Check Free Space Line
-    if len(bingo_lines[2]) in [7,8]:
-        pass
-    else:
+    if len(bingo_lines[2]) not in [7,8]:
         print ("Error on Free Space Line with Length Check")
         return False
     
+    #Check number validation of bingo card
+    bingo_board = create_bingo_board(bingo_lines)
+    low = 1
+    high = 15
+    for i in range(5):
+        for number in bingo_board:
+            print (number[i])
+            if number[i] == -1 or (low <= int(number[i]) <= high):
+                print ("pass")
+            else:
+                print("Number out of range: "+number[i])
+                return False
+        low+=15
+        high+=15
     return (bingo_lines)
         
 
@@ -164,29 +160,30 @@ def import_card():
     for interation in range(1,6):
         scan = scan_card(path,interation,3)
         validation = line_validation (scan)
+        print("Attempting Interaction Increase")
         if validation is False:
-            print("Attempting Interaction Increase")
+            print("Attempting x Increase")
             pass
         else:
             break
         scan = scan_card(path,interation,2)
         validation = line_validation (scan)
         if validation is False:
-            print("Attempting Interaction Increase")
+            print("Attempting x Increase")
             pass
         else:
             break
         scan = scan_card(path,interation,4)
         validation = line_validation (scan)
         if validation is False:
-            print("Attempting Interaction Increase")
+            print("Attempting x Increase")
             pass
         else:
             break
         scan = scan_card(path,interation,5)
         validation = line_validation (scan)
         if validation is False:
-            print("Attempting Interaction Increase")
+            print("Attempting x Increase")
             pass
         else:
             break
