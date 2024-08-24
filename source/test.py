@@ -1,9 +1,10 @@
-#from PIL import Image 
 from pytesseract import pytesseract 
 import cv2
 from tabulate import tabulate
 import os
 import logging
+import questionary
+
 
 
 def scan_card(path,iterations,x):
@@ -19,16 +20,10 @@ def scan_card(path,iterations,x):
 
     whitelist = "0123456789 "
     config = f"--psm 6 -c tessedit_char_whitelist={whitelist}"
-
-
+    
     # Perform text extraction
     scan = pytesseract.image_to_string(invert, lang='eng', config=config)
     return (scan)
-    #Data formating 
-    #cv2.imwrite('/workspaces/python-2/output/output1.png', kernel)
-    #cv2.imwrite('/workspaces/python-2/output/output2.png', invert)
-
-
 
 
 #Validate bingo lines and return bingo game lines
@@ -103,7 +98,6 @@ def create_bingo_board(bingo_lines):
             chunks = [first_chunk] + remaining_chunks
             bingo_board.append(chunks)
 
-         
     #Add free space
     bingo_board[2].insert(2,-1)
     return (bingo_board)
@@ -172,8 +166,6 @@ def import_card():
         if validation_passed:
             logging.warning("Validation Passed on: Interaction="+str(interaction)+" and x="+str(x))
             break
-  
-
     
     #CreateCard
     if validation_passed:
@@ -183,25 +175,27 @@ def import_card():
         exit ()
     return (bingo_board)
     
-
+def display_bingo_win(bingo_board,call_numbers):
+    os.system('clear')
+    print (tabulate(bingo_board,tablefmt="grid"))
+    print ("Called Numbers: "+str(call_numbers))
+    print ("BINGO!!!!")
 
 
 def play_bingo(bingo_board):
     
     play_bingo_board = []
     #Select Game mode
-    try:
-        mode = int(input("Game mode Selection (1)Full card, (2)Corners, (3)Lines: "))    
-    except ValueError:
-        print("Invalid input. Please enter a valid number.")
-        exit()
+        #mode = int(input("Game mode Selection (1)Full card, (2)Corners, (3)Lines: ")) 
+    game_mode = questionary.select("Select Game ModeL", choices=["Full Card", "Corners", "Lines"]).ask()  
+
     #Enter Called Numbers
     call_numbers = []
     while True:
         play_bingo_board = []
         
         #Display
-        os.system('clear')
+        #os.system('clear')
         print (tabulate(bingo_board,tablefmt="grid"))
         print ("Called Numbers (Below)")
         print (call_numbers)
@@ -220,34 +214,22 @@ def play_bingo(bingo_board):
         
         
         #Game modes win conidtions
-        if int(mode) == 1:
+        if game_mode == 'Full Card':
             bingo = game_fullcard(play_bingo_board)
             if bingo is True:
-                 #Display
-                os.system('clear')
-                print (tabulate(bingo_board,tablefmt="grid"))
-                print ("Called Numbers (Below)")
-                print (call_numbers)
-                print ("BINGO!!!!")
+                display_bingo_win(bingo_board,call_numbers)
                 break
-        elif int(mode) == 2:
+        elif game_mode == 'Corners':
             bingo = game_fourcorners(play_bingo_board)
             if bingo is True:
-                os.system('clear')
-                print (tabulate(bingo_board,tablefmt="grid"))
-                print ("Called Numbers (Below)")
-                print (call_numbers)
-                print ("BINGO!!!!")                
+                display_bingo_win(bingo_board,call_numbers)
                 break
-        elif int(mode) == 3:
+        elif game_mode == 'Lines':
             bingo = game_lines(play_bingo_board)
             if bingo is True:
-                os.system('clear')
-                print (tabulate(bingo_board,tablefmt="grid"))
-                print ("Called Numbers (Below)")
-                print (call_numbers)
-                print ("BINGO!!!!")
+                display_bingo_win(bingo_board,call_numbers)
                 break
     return (bingo)
 
 play_bingo(import_card())
+
