@@ -1,8 +1,10 @@
-from PIL import Image 
+#from PIL import Image 
 from pytesseract import pytesseract 
 import cv2
 from tabulate import tabulate
 import os
+import logging
+
 
 def scan_card(path,iterations,x):
     image = cv2.imread(path)
@@ -32,7 +34,6 @@ def scan_card(path,iterations,x):
 #Validate bingo lines and return bingo game lines
 def line_validation(scan):
     bingo_lines = []
-    count = 0 
     #Split data into lines
     lines = scan.splitlines()
     #Remove Empty Spaces In Line
@@ -40,24 +41,27 @@ def line_validation(scan):
     cleaned_lines = [cleaned_lines for cleaned_lines in cleaned_lines if cleaned_lines]
 
     #Count Number of digits in each line
-    #print(cleaned_lines)
     valid = 0
     for line in cleaned_lines:
         number_of_digits = len(line)
+    
         
         #Validate number of digits in each line
         if (valid != 2 and number_of_digits in [9,10]) or (valid == 2 and number_of_digits in [7,8]) :
             valid +=1
+            logging.info("Valid passed:"+str(valid))
             bingo_lines.append(line)
         else:
-            print ("Error on line ranges")
+            logging.info ("Valid failed:"+str(valid)+" Number of digits="+str(number_of_digits)+ " On line="+str(cleaned_lines))
+            logging.info ("Error on line ranges")
+            pass
     #Check total nuber of lines and number validation
     if len(bingo_lines) != 5:
-        print("Error all bingo lines were not detected")
+        logging.info("Error all bingo lines were not detected")
         return False
     #Check Free Space Line
     if len(bingo_lines[2]) not in [7,8]:
-        print ("Error on Free Space Line with Length Check")
+        logging.info ("Error on Free Space Line with Length Check")
         return False
     
     #Check number validation of bingo card
@@ -66,14 +70,16 @@ def line_validation(scan):
     high = 15
     for i in range(5):
         for number in bingo_board:
-            print (number[i])
+            #print (number[i])
             if number[i] == -1 or (low <= int(number[i]) <= high):
-                print ("pass")
+                #print ("pass")
+                pass
             else:
                 print("Number out of range: "+number[i])
                 return False
         low+=15
         high+=15
+    logging.warn("Validation Passed")
     return (bingo_lines)
         
 
@@ -102,8 +108,6 @@ def create_bingo_board(bingo_lines):
     bingo_board[2].insert(2,-1)
     return (bingo_board)
 
-#bingo_board = create_bingo_board(bingo_lines)
-
 #Identified Called Numbers
 def identify_called_numbers(bingo_board, call_numbers):
     x=0
@@ -118,7 +122,7 @@ def identify_called_numbers(bingo_board, call_numbers):
     return (bingo_board)
          
 def game_fullcard(bingo_board):
-    bingo= 0 #Number of Bingo Spots needed is 25
+    bingo= 0
     x=0
     while x<=4:
         y=0
@@ -154,43 +158,29 @@ def game_fourcorners(bingo_board):
 
 def import_card():
     #ScanCard
+    validation_passed = False
     path = input("Enter Game Card Path: ")
+    for interaction in range(1,7):
+        for x in range (1,6):
+            scan = scan_card(path, interaction, x)
+            validation_check = line_validation(scan)
+            if validation_check is False:
+                logging.warning("Validation Failed on: Interaction="+str(interaction)+" and x="+str(x))
+            else:
+                validation_passed = True
+                break
+        if validation_passed:
+            logging.warning("Validation Passed on: Interaction="+str(interaction)+" and x="+str(x))
+            break
   
-            
-    for interation in range(1,6):
-        scan = scan_card(path,interation,3)
-        validation = line_validation (scan)
-        print("Attempting Interaction Increase")
-        if validation is False:
-            print("Attempting x Increase")
-            pass
-        else:
-            break
-        scan = scan_card(path,interation,2)
-        validation = line_validation (scan)
-        if validation is False:
-            print("Attempting x Increase")
-            pass
-        else:
-            break
-        scan = scan_card(path,interation,4)
-        validation = line_validation (scan)
-        if validation is False:
-            print("Attempting x Increase")
-            pass
-        else:
-            break
-        scan = scan_card(path,interation,5)
-        validation = line_validation (scan)
-        if validation is False:
-            print("Attempting x Increase")
-            pass
-        else:
-            break
-            
+
     
     #CreateCard
-    bingo_board = create_bingo_board(validation)
+    if validation_passed:
+        bingo_board = create_bingo_board(validation_check)
+    else:
+        logging.warning("Bingo Card could not be read / validated")
+        exit ()
     return (bingo_board)
     
 
