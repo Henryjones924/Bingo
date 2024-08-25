@@ -4,6 +4,12 @@ from tabulate import tabulate
 import os
 import logging
 import questionary
+import subprocess
+
+
+
+
+bingo_card_path='/workspaces/python-2/bingo_cards/'
 
 
 
@@ -150,13 +156,14 @@ def game_fourcorners(bingo_board):
         return False
 
 
-def import_card():
+def import_card(card_png):
+    card_png=bingo_card_path+card_png
     #ScanCard
     validation_passed = False
-    path = input("Enter Game Card Path: ")
+    #path = input("Enter Game Card Path: ")
     for interaction in range(1,7):
         for x in range (1,6):
-            scan = scan_card(path, interaction, x)
+            scan = scan_card(card_png, interaction, x)
             validation_check = line_validation(scan)
             if validation_check is False:
                 logging.warning("Validation Failed on: Interaction="+str(interaction)+" and x="+str(x))
@@ -182,54 +189,83 @@ def display_bingo_win(bingo_board,call_numbers):
     print ("BINGO!!!!")
 
 
-def play_bingo(bingo_board):
-    
-    play_bingo_board = []
-    #Select Game mode
-        #mode = int(input("Game mode Selection (1)Full card, (2)Corners, (3)Lines: ")) 
-    game_mode = questionary.select("Select Game ModeL", choices=["Full Card", "Corners", "Lines"]).ask()  
+def play_bingo_game(bingo_board,game_mode,call_numbers):
 
-    #Enter Called Numbers
+    
+    play_bingo_board = identify_called_numbers(bingo_board, call_numbers)
+    print (tabulate(play_bingo_board,tablefmt="grid"))
+        
+    #Game modes win conidtions
+    if game_mode == 'Full Card':
+        bingo = game_fullcard(play_bingo_board)
+        if bingo is True:
+            return(display_bingo_win(bingo_board,call_numbers))
+        else:
+            return False
+    elif game_mode == 'Corners':
+        bingo = game_fourcorners(play_bingo_board)
+        if bingo is True:
+            return(display_bingo_win(bingo_board,call_numbers))
+        else:
+            return False
+    elif game_mode == 'Lines':
+        bingo = game_lines(play_bingo_board)
+        if bingo is True:
+            return(display_bingo_win(bingo_board,call_numbers))
+        else:
+            return False
+ 
+
+
+
+
+def play_bingo():
+
+    bingo_boards = []
+    #Get Bingo Cards from directory 
+    list_bingo_cards = subprocess.check_output('ls '+bingo_card_path, shell=True)
+    bingo_cards_array = list_bingo_cards.splitlines()
+    bingo_cards_array = [filename.decode('utf-8') for filename in bingo_cards_array]
+    
+    #Question about what cards to play
+    selected_cards = questionary.checkbox('Select Cards:',choices=bingo_cards_array).ask()
+    
+    #add selected bingo cards into bingo_baords vairable
+    for selected_card in selected_cards:    
+        bingo_boards.append (import_card(selected_card))
+
+    
+    
+    #Question on game mode selection
+    game_mode = questionary.select("Select Game Mode", choices=["Full Card", "Corners", "Lines"]).ask()  
+    pass
+
     call_numbers = []
+    #Game Play Start
     while True:
-        play_bingo_board = []
-        
-        #Display
-        #os.system('clear')
-        print (tabulate(bingo_board,tablefmt="grid"))
-        print ("Called Numbers (Below)")
-        print (call_numbers)
-        
+        #Record Called Numbers
         call = input("Enter called number or type stop:")
         if call.lower() == 'stop':
-            break
+            exit()
         try:
+            os.system('clear')
             call_numbers.append(int(call)) 
-            #Display called numbers
-            print("Numbers Called:" + str(call_numbers))
-            play_bingo_board = identify_called_numbers(bingo_board,call_numbers)
         except ValueError:
             print("Invalid input. Please enter a valid number.")
-            continue
         
-        
-        #Game modes win conidtions
-        if game_mode == 'Full Card':
-            bingo = game_fullcard(play_bingo_board)
-            if bingo is True:
-                display_bingo_win(bingo_board,call_numbers)
-                break
-        elif game_mode == 'Corners':
-            bingo = game_fourcorners(play_bingo_board)
-            if bingo is True:
-                display_bingo_win(bingo_board,call_numbers)
-                break
-        elif game_mode == 'Lines':
-            bingo = game_lines(play_bingo_board)
-            if bingo is True:
-                display_bingo_win(bingo_board,call_numbers)
-                break
-    return (bingo)
+        #Iterate through each bingo board
+        for i in range(len(bingo_boards)):
+            if (play_bingo_game(bingo_boards[i],game_mode,call_numbers)) is False:
+                pass
+            else:
+                play_bingo_game(bingo_boards[i],game_mode,call_numbers)
+                #print("Card Name: "+)
+                exit ()
 
-play_bingo(import_card())
+        #Display called numbers
+        print ("Game Mode: "+game_mode)
+        print("Numbers Called:" + str(call_numbers))
+     
+
+play_bingo()
 
