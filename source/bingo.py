@@ -167,9 +167,8 @@ def game_fourcorners(bingo_board):
 
 def import_card(bingo_card_file_name):
     bingo_card_file_name = bingo_card_path + bingo_card_file_name
-    # ScanCard
+    # Scan Bingo Cards
     validation_passed = False
-    # path = input("Enter Game Card Path: ")
     for interaction in range(1, 7):
         for x in range(1, 6):
             bingo_board_scanned = scan_card(bingo_card_file_name, interaction, x)
@@ -281,7 +280,6 @@ def play_bingo():
                 pass
             else:
                 bingo_check_for_win(bingo_boards[i], game_mode, numbers_called)
-                # print("Card Name: "+)
                 exit()
 
         # Display called numbers
