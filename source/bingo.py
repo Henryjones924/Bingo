@@ -24,15 +24,15 @@ def scan_card(path, iterations, x):
     config = f"--psm 6 -c tessedit_char_whitelist={whitelist}"
 
     # Perform text extraction
-    scan = pytesseract.image_to_string(invert, lang="eng", config=config)
-    return scan
+    bingo_board_scanned = pytesseract.image_to_string(invert, lang="eng", config=config)
+    return bingo_board_scanned
 
 
 # Validate bingo lines and return bingo game lines
-def line_validation(scan):
+def line_validation(bingo_board_scanned):
     bingo_lines = []
     # Split data into lines
-    lines = scan.splitlines()
+    lines = bingo_board_scanned.splitlines()
     # Remove Empty Spaces In Line
     cleaned_lines = [line.replace(" ", "") for line in lines]
     cleaned_lines = [cleaned_lines for cleaned_lines in cleaned_lines if cleaned_lines]
@@ -75,12 +75,10 @@ def line_validation(scan):
     high = 15
     for i in range(5):
         for number in bingo_board:
-            # print (number[i])
             if number[i] == -1 or (low <= int(number[i]) <= high):
-                # print ("pass")
                 pass
             else:
-                print("Number out of range: " + number[i])
+                logging.info("Number out of range: " + number[i])
                 return False
         low += 15
         high += 15
@@ -120,7 +118,6 @@ def identify_called_numbers(bingo_board, call_numbers):
         while y <= 4:
             if int(bingo_board[x][y]) in call_numbers:
                 bingo_board[x][y] = -1
-                # print (bingo_board[x][y]) #List found numbers
             y += 1
         x += 1
     return bingo_board
@@ -168,15 +165,15 @@ def game_fourcorners(bingo_board):
         return False
 
 
-def import_card(card_png):
-    card_png = bingo_card_path + card_png
+def import_card(bingo_card_file_name):
+    bingo_card_file_name = bingo_card_path + bingo_card_file_name
     # ScanCard
     validation_passed = False
     # path = input("Enter Game Card Path: ")
     for interaction in range(1, 7):
         for x in range(1, 6):
-            scan = scan_card(card_png, interaction, x)
-            validation_check = line_validation(scan)
+            bingo_board_scanned = scan_card(bingo_card_file_name, interaction, x)
+            validation_check = line_validation(bingo_board_scanned)
             if validation_check is False:
                 logging.warning(
                     "Validation Failed on: Interaction="
@@ -212,7 +209,7 @@ def display_bingo_win(bingo_board, call_numbers):
     print("BINGO!!!!")
 
 
-def play_bingo_game(bingo_board, game_mode, call_numbers):
+def bingo_check_for_win(bingo_board, game_mode, call_numbers):
     play_bingo_board = identify_called_numbers(bingo_board, call_numbers)
     print(tabulate(play_bingo_board, tablefmt="grid"))
 
@@ -237,6 +234,18 @@ def play_bingo_game(bingo_board, game_mode, call_numbers):
             return False
 
 
+def called_numbers(call_numbers):
+    called = input("Enter called number or type stop:")
+    if called.lower() == "stop":
+        exit()
+    try:
+        os.system("clear")
+        call_numbers.append(int(called))
+    except ValueError:
+        print("Invalid input. Please enter a valid number.")
+    return call_numbers
+
+
 def play_bingo():
     bingo_boards = []
     # Get Bingo Cards from directory
@@ -249,7 +258,7 @@ def play_bingo():
         "Select Cards:", choices=bingo_cards_array
     ).ask()
 
-    # add selected bingo cards into bingo_baords vairable
+    # Add selected bingo cards into bingo_baords vairable
     for selected_card in selected_cards:
         bingo_boards.append(import_card(selected_card))
 
@@ -257,33 +266,27 @@ def play_bingo():
     game_mode = questionary.select(
         "Select Game Mode", choices=["Full Card", "Corners", "Lines"]
     ).ask()
-    pass
 
-    call_numbers = []
+    numbers_called = []
     # Game Play Start
     while True:
         # Record Called Numbers
-        call = input("Enter called number or type stop:")
-        if call.lower() == "stop":
-            exit()
-        try:
-            os.system("clear")
-            call_numbers.append(int(call))
-        except ValueError:
-            print("Invalid input. Please enter a valid number.")
+        numbers_called = called_numbers(numbers_called)
 
         # Iterate through each bingo board
         for i in range(len(bingo_boards)):
-            if (play_bingo_game(bingo_boards[i], game_mode, call_numbers)) is False:
+            if (
+                bingo_check_for_win(bingo_boards[i], game_mode, numbers_called)
+            ) is False:
                 pass
             else:
-                play_bingo_game(bingo_boards[i], game_mode, call_numbers)
+                bingo_check_for_win(bingo_boards[i], game_mode, numbers_called)
                 # print("Card Name: "+)
                 exit()
 
         # Display called numbers
         print("Game Mode: " + game_mode)
-        print("Numbers Called:" + str(call_numbers))
+        print("Numbers Called:" + str(numbers_called))
 
 
 play_bingo()
